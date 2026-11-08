@@ -17,4 +17,4 @@ wav = model.generate(
     exaggeration=2.0,
     cfg_weight=0.5
     )
-sf.write("test-2.wav", wav.squeeze(0).detach().cpu().numpy(), model.sr)
+sf.write("test-2.wav", wav.squeeze(0).detach().cpu().numpy(), model.sr, subtype="FLOAT")

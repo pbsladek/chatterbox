@@ -9,6 +9,7 @@ from .hub import download_snapshot
 
 from .models.s3tokenizer import S3_SR
 from .models.s3gen import S3GEN_SR, S3Gen
+from .models.utils import load_map_location, resolve_device
 
 
 REPO_ID = "ResembleAI/chatterbox"
@@ -40,15 +41,11 @@ class ChatterboxVC:
     def from_local(cls, ckpt_dir, device) -> 'ChatterboxVC':
         ckpt_dir = Path(ckpt_dir)
         
-        # Always load to CPU first for non-CUDA devices to handle CUDA-saved models
-        if device in ["cpu", "mps"]:
-            map_location = torch.device('cpu')
-        else:
-            map_location = None
+        map_location = load_map_location(device)
             
         ref_dict = None
         if (builtin_voice := ckpt_dir / "conds.pt").exists():
-            states = torch.load(builtin_voice, map_location=map_location)
+            states = torch.load(builtin_voice, map_location=map_location, weights_only=True)
             ref_dict = states['gen']
 
         s3gen = S3Gen()
@@ -63,13 +60,7 @@ class ChatterboxVC:
     def from_pretrained(cls, device, *, repo_id=None, revision=None, cache_dir=None,
                         local_files_only=False, token=None) -> 'ChatterboxVC':
         """Load upstream or mirrored weights; pin ``revision`` for reproducibility."""
-        # Check if MPS is available on macOS
-        if device == "mps" and not torch.backends.mps.is_available():
-            if not torch.backends.mps.is_built():
-                print("MPS not available because the current PyTorch install was not built with MPS enabled.")
-            else:
-                print("MPS not available because the current MacOS version is not 12.3+ and/or you do not have an MPS-enabled device on this machine.")
-            device = "cpu"
+        device = resolve_device(device)
             
         local_path = download_snapshot(
             repo_id or REPO_ID, ["s3gen.safetensors", "conds.pt"],

@@ -16,6 +16,7 @@ from .models.s3gen import S3GEN_SR, S3Gen
 from .models.tokenizers import MTLTokenizer
 from .models.voice_encoder import VoiceEncoder
 from .models.t3.modules.cond_enc import T3Cond
+from .models.utils import load_map_location, resolve_device
 
 
 REPO_ID = "ResembleAI/chatterbox"
@@ -103,7 +104,7 @@ def punc_norm(text: str) -> str:
 
     # Add full stop if no ending punc
     text = text.rstrip(" ")
-    sentence_enders = {".", "!", "?", "-", ",","、","，","。","？","！"}
+    sentence_enders = {".", "!", "?", "-", ",", "、", "，", "。", "？", "！", "।", "॥", "؟", "،", "۔"}
     if not any(text.endswith(p) for p in sentence_enders):
         text += "."
 
@@ -189,11 +190,7 @@ class ChatterboxMultilingualTTS:
         ckpt_dir = Path(ckpt_dir)
         t3_model = _resolve_multilingual_t3_model(t3_model)
 
-        # Always load to CPU first for non-CUDA devices to handle CUDA-saved models
-        if device in ["cpu", "mps"]:
-            map_location = torch.device('cpu')
-        else:
-            map_location = None
+        map_location = load_map_location(device)
 
         ve = VoiceEncoder()
         ve.load_state_dict(
@@ -237,13 +234,7 @@ class ChatterboxMultilingualTTS:
         token=None,
     ) -> 'ChatterboxMultilingualTTS':
         """Load a checkpoint from upstream, a private mirror, or the offline cache."""
-        # Check if MPS is available on macOS
-        if device == "mps" and not torch.backends.mps.is_available():
-            if not torch.backends.mps.is_built():
-                print("MPS not available because the current PyTorch install was not built with MPS enabled.")
-            else:
-                print("MPS not available because the current MacOS version is not 12.3+ and/or you do not have an MPS-enabled device on this machine.")
-            device = "cpu"
+        device = resolve_device(device)
 
         t3_model = _resolve_multilingual_t3_model(t3_model)
         ckpt_dir = Path(
@@ -322,7 +313,8 @@ class ChatterboxMultilingualTTS:
         # Norm and tokenize text
         text = punc_norm(text)
         text_tokens = self.tokenizer.text_to_tokens(text, language_id=language_id.lower() if language_id else None).to(self.device)
-        text_tokens = torch.cat([text_tokens, text_tokens], dim=0)  # Need two seqs for CFG
+        if cfg_weight > 0.0:
+            text_tokens = torch.cat([text_tokens, text_tokens], dim=0)  # Need two seqs for CFG
 
         sot = self.t3.hp.start_text_token
         eot = self.t3.hp.stop_text_token

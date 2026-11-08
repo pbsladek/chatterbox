@@ -87,7 +87,7 @@ class S3Tokenizer(S3TokenizerV2):
             if wav.dim() == 1:
                 wav = wav.unsqueeze(0)
 
-            processed_wavs.append(wav)
+            processed_wavs.append(wav.float())
         return processed_wavs
 
     @torch.no_grad()

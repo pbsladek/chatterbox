@@ -306,6 +306,9 @@ backups together for long-term maintenance.
 
 ## References and notices
 
+See the [upstream PR review](upstream-pr-review.md) for the fixes brought in
+from the retired project's open PRs and the remaining feature candidates.
+
 The backup and mirror commands use the official Hugging Face
 [snapshot download](https://huggingface.co/docs/huggingface_hub/guides/download)
 and [upload APIs](https://huggingface.co/docs/huggingface_hub/guides/upload).

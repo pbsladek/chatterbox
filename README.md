@@ -108,7 +108,7 @@ text = "Hi there, Sarah here from MochaFone calling you back [chuckle], have you
 # Generate audio (requires a reference clip for voice cloning)
 wav = model.generate(text, audio_prompt_path="your_10s_ref_clip.wav")
 
-sf.write("test-turbo.wav", wav.squeeze(0).detach().cpu().numpy(), model.sr)
+sf.write("test-turbo.wav", wav.squeeze(0).detach().cpu().numpy(), model.sr, subtype="FLOAT")
 ```
 
 ##### Chatterbox-Nano
@@ -129,7 +129,7 @@ text = "Hi there, Sarah here from MochaFone calling you back [chuckle], have you
 # Generate audio (requires a reference clip for voice cloning)
 wav = model.generate(text, audio_prompt_path="your_10s_ref_clip.wav")
 
-sf.write("test-nano.wav", wav.squeeze(0).detach().cpu().numpy(), model.sr)
+sf.write("test-nano.wav", wav.squeeze(0).detach().cpu().numpy(), model.sr, subtype="FLOAT")
 ```
 
 ##### Chatterbox and Chatterbox-Multilingual
@@ -147,7 +147,7 @@ model = ChatterboxTTS.from_pretrained(device=device)
 
 text = "Ezreal and Jinx teamed up with Ahri, Yasuo, and Teemo to take down the enemy's Nexus in an epic late-game pentakill."
 wav = model.generate(text)
-sf.write("test-english.wav", wav.squeeze(0).detach().cpu().numpy(), model.sr)
+sf.write("test-english.wav", wav.squeeze(0).detach().cpu().numpy(), model.sr, subtype="FLOAT")
 
 # Multilingual V3 examples
 multilingual_model = ChatterboxMultilingualTTS.from_pretrained(device=device, t3_model="v3")
@@ -155,16 +155,16 @@ multilingual_model = ChatterboxMultilingualTTS.from_pretrained(device=device, t3
 
 french_text = "Bonjour, comment ça va? Ceci est le modèle de synthèse vocale multilingue Chatterbox, il prend en charge 23 langues."
 wav_french = multilingual_model.generate(french_text, language_id="fr")
-sf.write("test-french.wav", wav_french.squeeze(0).detach().cpu().numpy(), multilingual_model.sr)
+sf.write("test-french.wav", wav_french.squeeze(0).detach().cpu().numpy(), multilingual_model.sr, subtype="FLOAT")
 
 chinese_text = "你好，今天天气真不错，希望你有一个愉快的周末。"
 wav_chinese = multilingual_model.generate(chinese_text, language_id="zh")
-sf.write("test-chinese.wav", wav_chinese.squeeze(0).detach().cpu().numpy(), multilingual_model.sr)
+sf.write("test-chinese.wav", wav_chinese.squeeze(0).detach().cpu().numpy(), multilingual_model.sr, subtype="FLOAT")
 
 # If you want to synthesize with a different voice, specify the audio prompt
 AUDIO_PROMPT_PATH = "YOUR_FILE.wav"
 wav = model.generate(text, audio_prompt_path=AUDIO_PROMPT_PATH)
-sf.write("test-2.wav", wav.squeeze(0).detach().cpu().numpy(), model.sr)
+sf.write("test-2.wav", wav.squeeze(0).detach().cpu().numpy(), model.sr, subtype="FLOAT")
 ```
 See `example_tts.py`, `example_tts_turbo.py`, `example_tts_nano.py`, and `example_vc.py` for more examples.
 
