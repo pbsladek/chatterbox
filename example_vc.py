@@ -21,4 +21,4 @@ wav = model.generate(
     audio=AUDIO_PATH,
     target_voice_path=TARGET_VOICE_PATH,
 )
-sf.write("testvc.wav", wav.squeeze(0).detach().cpu().numpy(), model.sr)
+sf.write("testvc.wav", wav.squeeze(0).detach().cpu().numpy(), model.sr, subtype="FLOAT")

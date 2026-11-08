@@ -18,6 +18,7 @@ from .models.s3gen import S3GEN_SR, S3Gen
 from .models.tokenizers import EnTokenizer
 from .models.voice_encoder import VoiceEncoder
 from .models.t3.modules.cond_enc import T3Cond
+from .models.utils import load_map_location, resolve_device
 from .models.t3.modules.t3_config import T3Config
 from .models.s3gen.const import S3GEN_SIL
 import logging
@@ -136,11 +137,7 @@ class ChatterboxTurboTTS:
     def from_local(cls, ckpt_dir, device, nano=False) -> 'ChatterboxTurboTTS':
         ckpt_dir = Path(ckpt_dir)
 
-        # Always load to CPU first for non-CUDA devices to handle CUDA-saved models
-        if device in ["cpu", "mps"]:
-            map_location = torch.device('cpu')
-        else:
-            map_location = None
+        map_location = load_map_location(device)
 
         ve = VoiceEncoder()
         ve.load_state_dict(
@@ -192,13 +189,7 @@ class ChatterboxTurboTTS:
     def from_pretrained(cls, device, nano=False, *, repo_id=None, revision=None,
                         cache_dir=None, local_files_only=False, token=None) -> 'ChatterboxTurboTTS':
         """Load Turbo/Nano weights from upstream, a mirror, or the offline cache."""
-        # Check if MPS is available on macOS
-        if device == "mps" and not torch.backends.mps.is_available():
-            if not torch.backends.mps.is_built():
-                print("MPS not available because the current PyTorch install was not built with MPS enabled.")
-            else:
-                print("MPS not available because the current MacOS version is not 12.3+ and/or you do not have an MPS-enabled device on this machine.")
-            device = "cpu"
+        device = resolve_device(device)
 
         local_path = download_snapshot(
             repo_id=repo_id or (NANO_REPO_ID if nano else REPO_ID),
@@ -216,7 +207,7 @@ class ChatterboxTurboTTS:
             meter = ln.Meter(sr)
             loudness = meter.integrated_loudness(wav)
             gain_db = target_lufs - loudness
-            gain_linear = 10.0 ** (gain_db / 20.0)
+            gain_linear = float(10.0 ** (gain_db / 20.0))
             if math.isfinite(gain_linear) and gain_linear > 0.0:
                 wav = wav * gain_linear
         except Exception as e:

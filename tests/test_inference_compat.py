@@ -10,8 +10,8 @@ from chatterbox.models.t3.modules.cond_enc import T3Cond
 from chatterbox.models.t3.modules.t3_config import T3Config
 
 
-@pytest.mark.parametrize("backbone", ["llama", "gpt2"])
-def test_sampling_with_kv_cache_on_tiny_backbones(monkeypatch, backbone):
+@pytest.mark.parametrize("backbone,cfg_weight", [("llama", 0.0), ("llama", 0.5), ("gpt2", 0.0)])
+def test_sampling_with_kv_cache_on_tiny_backbones(monkeypatch, backbone, cfg_weight):
     config = dict(model_type=backbone, hidden_size=32, vocab_size=8,
                   num_hidden_layers=1, num_attention_heads=2, num_key_value_heads=2,
                   intermediate_size=64, max_position_embeddings=128,
@@ -29,7 +29,15 @@ def test_sampling_with_kv_cache_on_tiny_backbones(monkeypatch, backbone):
     text = torch.tensor([[hp.start_text_token, 10, hp.stop_text_token]])
     torch.manual_seed(42)
     if backbone == "llama":
-        tokens = model.inference(t3_cond=cond, text_tokens=text.repeat(2, 1), max_new_tokens=3)
+        batch_size = 2 if cfg_weight > 0 else 1
+        batches = []
+        def observe_batch(module, args, kwargs):
+            batches.append(kwargs["inputs_embeds"].size(0))
+        handle = model.tfmr.register_forward_pre_hook(observe_batch, with_kwargs=True)
+        tokens = model.inference(t3_cond=cond, text_tokens=text.repeat(batch_size, 1),
+                                 max_new_tokens=3, cfg_weight=cfg_weight)
+        handle.remove()
+        assert batches and all(batch == batch_size for batch in batches)
         assert 1 <= tokens.shape[1] <= 3
     else:
         tokens = model.inference_turbo(cond, text, max_gen_len=2)

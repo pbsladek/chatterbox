@@ -27,6 +27,7 @@ def main():
     parser.add_argument("--t3-model", default="v3")
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--cfg-weight", type=float, help="Override classifier-free guidance strength")
     parser.add_argument("--output", type=Path, default=Path("artifacts/smoke.wav"))
     args = parser.parse_args()
     if args.repo_id and not args.revision:
@@ -54,6 +55,8 @@ def main():
     generate_kwargs = {}
     if args.reference:
         generate_kwargs["audio_prompt_path"] = str(args.reference)
+    if args.cfg_weight is not None:
+        generate_kwargs["cfg_weight"] = args.cfg_weight
     if args.variant == "multilingual":
         generate_kwargs["language_id"] = args.language
     start = time.monotonic()
@@ -73,6 +76,7 @@ def main():
             manifest_hash = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
     report = {
         "variant": args.variant, "device": str(model.device), "seed": args.seed,
+        "cfg_weight": args.cfg_weight,
         "text": args.text, "language": args.language, "t3_model": args.t3_model,
         "repo_id": args.repo_id or provenance.get("repo_id"),
         "revision": args.revision or provenance.get("revision"),
